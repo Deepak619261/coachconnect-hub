@@ -33,14 +33,14 @@ export default function PublicCoachingPage() {
     <div className="min-h-screen bg-background">
       <HeroSection coaching={coaching} />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-10 relative z-10 space-y-12 pb-16">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-6 relative z-10 space-y-16 pb-20">
         <InfoSection coaching={coaching} />
         {notices && <NoticesSection notices={notices} />}
         {notes && <NotesSection notes={notes} />}
 
-        <footer className="text-center pt-8 border-t border-border">
-          <p className="text-sm text-muted-foreground">
-            Powered by <span className="font-semibold text-foreground">CoachHub Lite</span>
+        <footer className="text-center pt-10 border-t border-border">
+          <p className="text-sm text-muted-foreground/60">
+            Powered by <span className="font-semibold text-foreground/70">CoachHub Lite</span>
           </p>
         </footer>
       </div>
