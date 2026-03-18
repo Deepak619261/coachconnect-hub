@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { uploadFile, generateSlug } from "@/lib/supabase-helpers";
 import { useUpsertCoaching } from "@/hooks/useCoaching";
+import { Save } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface ProfileFormProps {
@@ -14,7 +15,7 @@ interface ProfileFormProps {
 }
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 function validateImageFile(file: File): string | null {
   if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) return "Only JPG, PNG, WebP, and GIF images are allowed.";
@@ -97,50 +98,58 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
 
   return (
     <div className="max-w-2xl">
-      <h2 className="text-2xl font-display text-foreground mb-1">Coaching Profile</h2>
-      <p className="text-muted-foreground mb-6">Set up your public coaching page.</p>
+      <div className="mb-8">
+        <h2 className="text-2xl sm:text-3xl font-display text-foreground mb-1">Coaching Profile</h2>
+        <p className="text-muted-foreground text-sm">Set up your public coaching page details and branding.</p>
+      </div>
 
-      <form onSubmit={handleSave} className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Coaching Name *</Label>
-            <Input value={coachingName} onChange={(e) => setCoachingName(e.target.value)} required className="h-11" />
+      <form onSubmit={handleSave} className="space-y-8">
+        {/* Basic Info */}
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-5 shadow-card">
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Basic Information</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">Coaching Name *</Label>
+              <Input value={coachingName} onChange={(e) => setCoachingName(e.target.value)} required className="h-11 rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">Contact Number</Label>
+              <Input value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} className="h-11 rounded-xl" />
+            </div>
           </div>
           <div className="space-y-2">
-            <Label>Contact Number</Label>
-            <Input value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} className="h-11" />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Description</Label>
-          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="A short tagline about your coaching..." />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Address</Label>
-          <Input value={address} onChange={(e) => setAddress(e.target.value)} className="h-11" />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Google Maps Link</Label>
-          <Input value={mapLink} onChange={(e) => setMapLink(e.target.value)} placeholder="https://maps.google.com/..." className="h-11" />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Logo</Label>
-            <Input type="file" accept="image/*" onChange={handleFileChange(setLogoFile)} className="h-11 pt-2.5" />
-            {coaching?.logo_url && <img src={coaching.logo_url} alt="Logo" className="w-16 h-16 rounded-xl object-cover mt-2 border border-border" />}
+            <Label className="text-xs font-medium text-muted-foreground">Description</Label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="A short tagline about your coaching..." className="rounded-xl" />
           </div>
           <div className="space-y-2">
-            <Label>Banner Image</Label>
-            <Input type="file" accept="image/*" onChange={handleFileChange(setBannerFile)} className="h-11 pt-2.5" />
-            {coaching?.banner_url && <img src={coaching.banner_url} alt="Banner" className="w-full h-20 rounded-xl object-cover mt-2 border border-border" />}
+            <Label className="text-xs font-medium text-muted-foreground">Address</Label>
+            <Input value={address} onChange={(e) => setAddress(e.target.value)} className="h-11 rounded-xl" />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-muted-foreground">Google Maps Link</Label>
+            <Input value={mapLink} onChange={(e) => setMapLink(e.target.value)} placeholder="https://maps.google.com/..." className="h-11 rounded-xl" />
           </div>
         </div>
 
-        <Button type="submit" disabled={upsertCoaching.isPending}>
+        {/* Branding */}
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-5 shadow-card">
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Branding</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">Logo</Label>
+              <Input type="file" accept="image/*" onChange={handleFileChange(setLogoFile)} className="h-11 pt-2.5 rounded-xl" />
+              {coaching?.logo_url && <img src={coaching.logo_url} alt="Logo" className="w-16 h-16 rounded-xl object-cover mt-2 border border-border" />}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">Banner Image</Label>
+              <Input type="file" accept="image/*" onChange={handleFileChange(setBannerFile)} className="h-11 pt-2.5 rounded-xl" />
+              {coaching?.banner_url && <img src={coaching.banner_url} alt="Banner" className="w-full h-20 rounded-xl object-cover mt-2 border border-border" />}
+            </div>
+          </div>
+        </div>
+
+        <Button type="submit" disabled={upsertCoaching.isPending} className="rounded-xl px-6 h-11">
+          <Save className="w-4 h-4 mr-2" />
           {upsertCoaching.isPending ? "Saving..." : "Save Profile"}
         </Button>
       </form>
