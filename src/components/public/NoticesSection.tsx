@@ -26,14 +26,14 @@ export function NoticesSection({ notices }: NoticesSectionProps) {
       viewport={{ once: true }}
       custom={0}
     >
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
           <Bell className="w-5 h-5 text-accent" />
         </div>
-        <h2 className="text-2xl font-display text-foreground">Announcements</h2>
+        <h2 className="text-2xl sm:text-3xl font-display text-foreground">Announcements</h2>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {notices.map((notice, i) => (
           <motion.div
             key={notice.id}
@@ -42,15 +42,15 @@ export function NoticesSection({ notices }: NoticesSectionProps) {
             whileInView="visible"
             viewport={{ once: true }}
             custom={i}
-            className="bg-card border border-border rounded-2xl p-6 hover:shadow-md hover:border-accent/30 transition-all duration-300 group"
+            className="bg-card border border-border rounded-2xl p-6 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 group"
           >
-            <h3 className="font-display text-lg text-foreground mb-2 group-hover:text-accent transition-colors">
+            <h3 className="font-display text-lg text-foreground mb-2 group-hover:text-accent transition-colors duration-200">
               {notice.title}
             </h3>
             {notice.content && (
-              <p className="text-muted-foreground text-sm line-clamp-3 mb-3">{notice.content}</p>
+              <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3 mb-4">{notice.content}</p>
             )}
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground/70 font-medium tracking-wide uppercase">
               {new Date(notice.created_at).toLocaleDateString("en-US", {
                 year: "numeric",
                 month: "long",

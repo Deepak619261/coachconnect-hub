@@ -9,7 +9,7 @@ import { FileText, ExternalLink, Trash2, Plus, FileQuestion } from "lucide-react
 import type { Tables } from "@/integrations/supabase/types";
 
 const ACCEPTED_NOTE_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 interface NotesManagerProps {
   coaching: Tables<"coaching">;
@@ -70,25 +70,27 @@ export function NotesManager({ coaching }: NotesManagerProps) {
 
   return (
     <div className="max-w-3xl">
-      <h2 className="text-2xl font-display text-foreground mb-1">Study Material</h2>
-      <p className="text-muted-foreground mb-6">Upload notes and resources for your students.</p>
+      <div className="mb-8">
+        <h2 className="text-2xl sm:text-3xl font-display text-foreground mb-1">Study Material</h2>
+        <p className="text-muted-foreground text-sm">Upload notes and resources for your students.</p>
+      </div>
 
-      <form onSubmit={handleAdd} className="bg-card border border-border rounded-2xl p-6 mb-6 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <form onSubmit={handleAdd} className="bg-card border border-border rounded-2xl p-6 mb-8 space-y-5 shadow-card">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div className="space-y-2">
-            <Label>Title *</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} required className="h-11" />
+            <Label className="text-xs font-medium text-muted-foreground">Title *</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} required className="h-11 rounded-xl" />
           </div>
           <div className="space-y-2">
-            <Label>Subject</Label>
-            <Input value={subject} onChange={(e) => setSubject(e.target.value)} className="h-11" placeholder="e.g. Mathematics" />
+            <Label className="text-xs font-medium text-muted-foreground">Subject</Label>
+            <Input value={subject} onChange={(e) => setSubject(e.target.value)} className="h-11 rounded-xl" placeholder="e.g. Mathematics" />
           </div>
         </div>
         <div className="space-y-2">
-          <Label>File (PDF / Image, max 10MB)</Label>
-          <Input type="file" accept=".pdf,image/*" onChange={handleFileChange} className="h-11 pt-2.5" />
+          <Label className="text-xs font-medium text-muted-foreground">File (PDF / Image, max 10MB)</Label>
+          <Input type="file" accept=".pdf,image/*" onChange={handleFileChange} className="h-11 pt-2.5 rounded-xl" />
         </div>
-        <Button type="submit" size="sm" disabled={createNote.isPending}>
+        <Button type="submit" size="sm" disabled={createNote.isPending} className="rounded-xl">
           <Plus className="w-4 h-4 mr-1.5" /> {createNote.isPending ? "Adding..." : "Add Note"}
         </Button>
       </form>
@@ -96,25 +98,25 @@ export function NotesManager({ coaching }: NotesManagerProps) {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />
+            <div key={i} className="h-16 bg-muted rounded-2xl animate-pulse" />
           ))}
         </div>
       ) : notes && notes.length > 0 ? (
         <div className="space-y-3">
           {notes.map((note) => (
-            <div key={note.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between hover:shadow-sm transition-shadow">
+            <div key={note.id} className="bg-card border border-border rounded-2xl p-4 flex items-center justify-between shadow-card hover:shadow-card-hover transition-all duration-200">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                  <FileText className="w-5 h-5 text-muted-foreground" />
+                <div className="w-10 h-10 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
+                  <FileText className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">{note.title}</p>
-                  {note.subject && <p className="text-sm text-muted-foreground">{note.subject}</p>}
+                  <p className="font-medium text-foreground text-sm">{note.title}</p>
+                  {note.subject && <p className="text-xs text-muted-foreground mt-0.5">{note.subject}</p>}
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 {note.file_url && (
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" size="sm" className="rounded-xl" asChild>
                     <a href={note.file_url} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
@@ -124,7 +126,7 @@ export function NotesManager({ coaching }: NotesManagerProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => deleteNote.mutate({ id: note.id, coachingId: coaching.id })}
-                  className="text-destructive hover:text-destructive"
+                  className="text-destructive hover:text-destructive rounded-xl"
                   disabled={deleteNote.isPending}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -134,10 +136,10 @@ export function NotesManager({ coaching }: NotesManagerProps) {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 bg-card border border-border rounded-2xl">
+        <div className="text-center py-16 bg-card border border-border rounded-2xl shadow-card">
           <FileQuestion className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground font-medium">No notes yet</p>
-          <p className="text-sm text-muted-foreground mt-1">Add your first study material above.</p>
+          <p className="text-muted-foreground font-medium text-sm">No notes yet</p>
+          <p className="text-xs text-muted-foreground mt-1">Add your first study material above.</p>
         </div>
       )}
     </div>
