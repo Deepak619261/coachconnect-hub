@@ -14,7 +14,139 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      coaching: {
+        Row: {
+          address: string | null
+          banner_url: string | null
+          contact_number: string | null
+          created_at: string
+          description: string | null
+          google_map_link: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          owner_id: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          banner_url?: string | null
+          contact_number?: string | null
+          created_at?: string
+          description?: string | null
+          google_map_link?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          owner_id: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          banner_url?: string | null
+          contact_number?: string | null
+          created_at?: string
+          description?: string | null
+          google_map_link?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          owner_id?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notes: {
+        Row: {
+          coaching_id: string
+          created_at: string
+          file_url: string | null
+          id: string
+          subject: string | null
+          title: string
+        }
+        Insert: {
+          coaching_id: string
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          subject?: string | null
+          title: string
+        }
+        Update: {
+          coaching_id?: string
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          subject?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_coaching_id_fkey"
+            columns: ["coaching_id"]
+            isOneToOne: false
+            referencedRelation: "coaching"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notices: {
+        Row: {
+          coaching_id: string
+          content: string | null
+          created_at: string
+          id: string
+          title: string
+        }
+        Insert: {
+          coaching_id: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          title: string
+        }
+        Update: {
+          coaching_id?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notices_coaching_id_fkey"
+            columns: ["coaching_id"]
+            isOneToOne: false
+            referencedRelation: "coaching"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
