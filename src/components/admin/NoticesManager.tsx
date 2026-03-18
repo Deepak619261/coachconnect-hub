@@ -43,19 +43,21 @@ export function NoticesManager({ coaching }: NoticesManagerProps) {
 
   return (
     <div className="max-w-3xl">
-      <h2 className="text-2xl font-display text-foreground mb-1">Notices</h2>
-      <p className="text-muted-foreground mb-6">Post announcements for your students.</p>
+      <div className="mb-8">
+        <h2 className="text-2xl sm:text-3xl font-display text-foreground mb-1">Notices</h2>
+        <p className="text-muted-foreground text-sm">Post announcements for your students.</p>
+      </div>
 
-      <form onSubmit={handleAdd} className="bg-card border border-border rounded-2xl p-6 mb-6 space-y-4">
+      <form onSubmit={handleAdd} className="bg-card border border-border rounded-2xl p-6 mb-8 space-y-5 shadow-card">
         <div className="space-y-2">
-          <Label>Title *</Label>
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} required className="h-11" />
+          <Label className="text-xs font-medium text-muted-foreground">Title *</Label>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} required className="h-11 rounded-xl" />
         </div>
         <div className="space-y-2">
-          <Label>Content</Label>
-          <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3} placeholder="Write your announcement..." />
+          <Label className="text-xs font-medium text-muted-foreground">Content</Label>
+          <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3} placeholder="Write your announcement..." className="rounded-xl" />
         </div>
-        <Button type="submit" size="sm" disabled={createNotice.isPending}>
+        <Button type="submit" size="sm" disabled={createNotice.isPending} className="rounded-xl">
           <Plus className="w-4 h-4 mr-1.5" /> {createNotice.isPending ? "Publishing..." : "Publish Notice"}
         </Button>
       </form>
@@ -63,17 +65,17 @@ export function NoticesManager({ coaching }: NoticesManagerProps) {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-muted rounded-xl animate-pulse" />
+            <div key={i} className="h-20 bg-muted rounded-2xl animate-pulse" />
           ))}
         </div>
       ) : notices && notices.length > 0 ? (
         <div className="space-y-3">
           {notices.map((notice) => (
-            <div key={notice.id} className="bg-card border border-border rounded-xl p-4 flex items-start justify-between hover:shadow-sm transition-shadow">
+            <div key={notice.id} className="bg-card border border-border rounded-2xl p-5 flex items-start justify-between shadow-card hover:shadow-card-hover transition-all duration-200">
               <div className="min-w-0">
-                <p className="font-medium text-foreground">{notice.title}</p>
-                {notice.content && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{notice.content}</p>}
-                <p className="text-xs text-muted-foreground mt-2">
+                <p className="font-medium text-foreground text-sm">{notice.title}</p>
+                {notice.content && <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">{notice.content}</p>}
+                <p className="text-xs text-muted-foreground/60 mt-2.5 font-medium">
                   {new Date(notice.created_at).toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "short",
@@ -85,7 +87,7 @@ export function NoticesManager({ coaching }: NoticesManagerProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => deleteNotice.mutate({ id: notice.id, coachingId: coaching.id })}
-                className="text-destructive hover:text-destructive ml-4 shrink-0"
+                className="text-destructive hover:text-destructive ml-4 shrink-0 rounded-xl"
                 disabled={deleteNotice.isPending}
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -94,10 +96,10 @@ export function NoticesManager({ coaching }: NoticesManagerProps) {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 bg-card border border-border rounded-2xl">
+        <div className="text-center py-16 bg-card border border-border rounded-2xl shadow-card">
           <Megaphone className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground font-medium">No notices yet</p>
-          <p className="text-sm text-muted-foreground mt-1">Publish your first announcement above.</p>
+          <p className="text-muted-foreground font-medium text-sm">No notices yet</p>
+          <p className="text-xs text-muted-foreground mt-1">Publish your first announcement above.</p>
         </div>
       )}
     </div>
