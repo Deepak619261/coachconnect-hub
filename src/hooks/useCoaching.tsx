@@ -28,9 +28,9 @@ export function useCoachingBySlug(slug: string) {
         .from("coaching")
         .select("*")
         .eq("slug", slug)
-        .single();
+        .maybeSingle();
       if (error) throw error;
-      return data;
+      return data; // null if not found — handled gracefully in PublicCoachingPage
     },
     enabled: !!slug,
   });

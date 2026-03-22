@@ -1,6 +1,7 @@
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useCoachingBySlug, useCoachingNotes, useCoachingNotices } from "@/hooks/useCoaching";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { HeroSection } from "@/components/public/HeroSection";
 import { InfoSection } from "@/components/public/InfoSection";
 import { NoticesSection } from "@/components/public/NoticesSection";
@@ -9,22 +10,30 @@ import { PublicPageSkeleton } from "@/components/public/PublicPageSkeleton";
 
 export default function PublicCoachingPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { data: coaching, isLoading, error } = useCoachingBySlug(slug || "");
-  const { data: notes } = useCoachingNotes(coaching?.id);
-  const { data: notices } = useCoachingNotices(coaching?.id);
+  const { data: coaching, isLoading, isError } = useCoachingBySlug(slug || "");
+  const { data: notes = [] } = useCoachingNotes(coaching?.id);
+  const { data: notices = [] } = useCoachingNotices(coaching?.id);
 
   if (isLoading) return <PublicPageSkeleton />;
 
-  if (error || !coaching) {
+  // coaching is null (not found) OR a fetch error occurred
+  if (isError || !coaching) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
-        <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-6">
-          <GraduationCap className="w-8 h-8 text-muted-foreground" />
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-6 mx-auto">
+            <GraduationCap className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-display text-foreground mb-2">Coaching Page Not Found</h1>
+          <p className="text-muted-foreground max-w-sm text-center mb-8">
+            The coaching page <span className="font-mono text-sm bg-muted px-1.5 py-0.5 rounded">/c/{slug}</span> doesn't exist or may have been removed.
+          </p>
+          <Button variant="outline" asChild>
+            <Link to="/">
+              <ArrowLeft className="w-4 h-4 mr-2" /> Go Home
+            </Link>
+          </Button>
         </div>
-        <h1 className="text-2xl font-display text-foreground mb-2">Page Not Found</h1>
-        <p className="text-muted-foreground max-w-sm text-center">
-          This coaching page doesn't exist or has been removed.
-        </p>
       </div>
     );
   }
@@ -35,8 +44,8 @@ export default function PublicCoachingPage() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-6 relative z-10 space-y-16 pb-20">
         <InfoSection coaching={coaching} />
-        {notices && <NoticesSection notices={notices} />}
-        {notes && <NotesSection notes={notes} />}
+        <NoticesSection notices={notices} />
+        <NotesSection notes={notes} />
 
         <footer className="text-center pt-10 border-t border-border">
           <p className="text-sm text-muted-foreground/60">

@@ -16,6 +16,7 @@ interface NoticesSectionProps {
 }
 
 export function NoticesSection({ notices }: NoticesSectionProps) {
+  // Don't render the section at all if no notices
   if (!notices.length) return null;
 
   return (
@@ -51,7 +52,7 @@ export function NoticesSection({ notices }: NoticesSectionProps) {
               <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3 mb-4">{notice.content}</p>
             )}
             <p className="text-xs text-muted-foreground/70 font-medium tracking-wide uppercase">
-              {new Date(notice.created_at).toLocaleDateString("en-US", {
+              {new Date(notice.created_at).toLocaleDateString("en-IN", {
                 year: "numeric",
                 month: "long",
                 day: "numeric",

@@ -10,16 +10,17 @@ import { NoticesManager } from "@/components/admin/NoticesManager";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminDashboard() {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { data: coaching, isLoading } = useMyCoaching();
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
 
+  // Handle post-signout redirect
   useEffect(() => {
-    if (!authLoading && !user) navigate("/auth");
-  }, [user, authLoading, navigate]);
+    if (!user) navigate("/auth", { replace: true });
+  }, [user, navigate]);
 
-  if (authLoading || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="border-b border-border bg-card h-16" />
@@ -39,11 +40,28 @@ export default function AdminDashboard() {
 
   if (!user) return null;
 
+  const coachingSlug = coaching?.slug;
+
   return (
     <div className="min-h-screen bg-background">
-      <AdminHeader slug={coaching?.slug} onSignOut={signOut} />
+      <AdminHeader slug={coachingSlug} onSignOut={signOut} />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        {/* Public page link banner */}
+        {coachingSlug && (
+          <div className="mb-8 flex items-center gap-3 bg-primary/5 border border-primary/15 rounded-2xl px-5 py-3">
+            <span className="text-sm text-muted-foreground">Your public page:</span>
+            <a
+              href={`/c/${coachingSlug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-semibold text-primary hover:text-accent transition-colors"
+            >
+              /c/{coachingSlug} ↗
+            </a>
+          </div>
+        )}
+
         <AdminTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
         {activeTab === "profile" && (
