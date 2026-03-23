@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useCoachingBySlug, useCoachingNotes, useCoachingNotices } from "@/hooks/useCoaching";
+import { useCoachingBySlug, useCoachingNotes, useCoachingNotices, useTestimonials, useIncrementPageViews } from "@/hooks/useCoaching";
 import { GraduationCap, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroSection } from "@/components/public/HeroSection";
@@ -7,12 +8,23 @@ import { InfoSection } from "@/components/public/InfoSection";
 import { NoticesSection } from "@/components/public/NoticesSection";
 import { NotesSection } from "@/components/public/NotesSection";
 import { PublicPageSkeleton } from "@/components/public/PublicPageSkeleton";
+import { VideoSection } from "@/components/public/VideoSection";
+import { InquirySection } from "@/components/public/InquirySection";
+import { TestimonialsSection } from "@/components/public/TestimonialsSection";
 
 export default function PublicCoachingPage() {
   const { slug } = useParams<{ slug: string }>();
   const { data: coaching, isLoading, isError } = useCoachingBySlug(slug || "");
   const { data: notes = [] } = useCoachingNotes(coaching?.id);
   const { data: notices = [] } = useCoachingNotices(coaching?.id);
+  const { data: testimonials = [] } = useTestimonials(coaching?.id);
+  const { mutate: incrementViews } = useIncrementPageViews();
+
+  useEffect(() => {
+    if (coaching?.id) {
+      incrementViews(coaching.id);
+    }
+  }, [coaching?.id, incrementViews]);
 
   if (isLoading) return <PublicPageSkeleton />;
 
@@ -39,13 +51,16 @@ export default function PublicCoachingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background${coaching.theme ? ` theme-${coaching.theme}` : ''}`}>
       <HeroSection coaching={coaching} />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-6 relative z-10 space-y-16 pb-20">
         <InfoSection coaching={coaching} />
+        <VideoSection youtubeUrl={coaching.youtube_url} />
         <NoticesSection notices={notices} />
         <NotesSection notes={notes} />
+        <TestimonialsSection testimonials={testimonials} />
+        <InquirySection coachingId={coaching.id} />
 
         <footer className="text-center pt-10 border-t border-border">
           <p className="text-sm text-muted-foreground/60">

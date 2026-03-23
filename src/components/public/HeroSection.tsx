@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Calendar, Youtube, Instagram, Twitter, Linkedin, ExternalLink } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface HeroSectionProps {
@@ -54,11 +54,60 @@ export function HeroSection({ coaching }: HeroSectionProps) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed"
+            className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed mb-6"
           >
             {coaching.description}
           </motion.p>
         )}
+
+        <motion.div 
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="flex flex-wrap items-center justify-center gap-4 mt-6"
+        >
+          {coaching.calendly_url && (
+            <a 
+              href={coaching.calendly_url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-full bg-accent px-6 py-3 text-sm font-medium text-accent-foreground shadow-sm hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring transition-colors"
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Book a Session
+            </a>
+          )}
+
+          {(() => {
+            const links = typeof coaching.social_links === 'object' && coaching.social_links !== null ? coaching.social_links : {};
+            return Object.entries(links).map(([platform, url]) => {
+              if (!url || typeof url !== 'string') return null;
+              
+              const getIcon = (p: string) => {
+                switch(p.toLowerCase()) {
+                  case 'youtube': return <Youtube className="h-5 w-5" />;
+                  case 'instagram': return <Instagram className="h-5 w-5" />;
+                  case 'twitter': return <Twitter className="h-5 w-5" />;
+                  case 'linkedin': return <Linkedin className="h-5 w-5" />;
+                  default: return <ExternalLink className="h-5 w-5" />;
+                }
+              };
+
+              return (
+                <a 
+                  key={platform}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full bg-secondary p-3 text-secondary-foreground hover:bg-secondary/80 transition-colors"
+                  aria-label={platform}
+                >
+                  {getIcon(platform)}
+                </a>
+              );
+            });
+          })()}
+        </motion.div>
       </div>
     </section>
   );

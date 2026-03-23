@@ -1,11 +1,13 @@
-import { Settings, FileText, Bell, LucideIcon } from "lucide-react";
+import { Settings, FileText, Bell, MessageSquare, Star, LucideIcon } from "lucide-react";
 
-export type TabKey = "profile" | "notes" | "notices";
+export type TabKey = "profile" | "notes" | "notices" | "inquiries" | "testimonials";
 
 const tabs: { key: TabKey; label: string; icon: LucideIcon }[] = [
   { key: "profile", label: "Profile", icon: Settings },
   { key: "notes", label: "Study Material", icon: FileText },
   { key: "notices", label: "Notices", icon: Bell },
+  { key: "inquiries", label: "Inquiries", icon: MessageSquare },
+  { key: "testimonials", label: "Reviews", icon: Star },
 ];
 
 interface AdminTabsProps {

@@ -7,6 +7,8 @@ import { AdminTabs, type TabKey } from "@/components/admin/AdminTabs";
 import { ProfileForm } from "@/components/admin/ProfileForm";
 import { NotesManager } from "@/components/admin/NotesManager";
 import { NoticesManager } from "@/components/admin/NoticesManager";
+import { InquiriesManager } from "@/components/admin/InquiriesManager";
+import { TestimonialsManager } from "@/components/admin/TestimonialsManager";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminDashboard() {
@@ -83,6 +85,30 @@ export default function AdminDashboard() {
         {activeTab === "notices" && (
           coaching ? (
             <NoticesManager coaching={coaching} />
+          ) : (
+            <div className="max-w-3xl">
+              <p className="text-muted-foreground bg-card border border-border rounded-2xl p-8 text-center">
+                Please set up your coaching profile first.
+              </p>
+            </div>
+          )
+        )}
+
+        {activeTab === "inquiries" && (
+          coaching ? (
+            <InquiriesManager coaching={coaching} />
+          ) : (
+            <div className="max-w-3xl">
+              <p className="text-muted-foreground bg-card border border-border rounded-2xl p-8 text-center">
+                Please set up your coaching profile first.
+              </p>
+            </div>
+          )
+        )}
+
+        {activeTab === "testimonials" && (
+          coaching ? (
+            <TestimonialsManager coaching={coaching} />
           ) : (
             <div className="max-w-3xl">
               <p className="text-muted-foreground bg-card border border-border rounded-2xl p-8 text-center">

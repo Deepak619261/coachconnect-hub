@@ -35,6 +35,14 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  
+  const [calendlyUrl, setCalendlyUrl] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [theme, setTheme] = useState("");
+  const [socialInsta, setSocialInsta] = useState("");
+  const [socialLinkedin, setSocialLinkedin] = useState("");
+  const [socialYoutube, setSocialYoutube] = useState("");
+  const [socialTwitter, setSocialTwitter] = useState("");
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +54,16 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
       setAddress(coaching.address || "");
       setMapLink(coaching.google_map_link || "");
       setContactNumber(coaching.contact_number || "");
+      
+      setCalendlyUrl(coaching.calendly_url || "");
+      setYoutubeUrl(coaching.youtube_url || "");
+      setTheme(coaching.theme || "");
+      
+      const socials = typeof coaching.social_links === 'object' && coaching.social_links !== null ? coaching.social_links as Record<string, string> : {};
+      setSocialInsta(socials.instagram || "");
+      setSocialLinkedin(socials.linkedin || "");
+      setSocialYoutube(socials.youtube || "");
+      setSocialTwitter(socials.twitter || "");
     }
   }, [coaching]);
 
@@ -101,6 +119,15 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
         contact_number: contactNumber.trim(),
         logo_url: logoUrl,
         banner_url: bannerUrl,
+        calendly_url: calendlyUrl.trim() || null,
+        youtube_url: youtubeUrl.trim() || null,
+        theme: theme || null,
+        social_links: {
+          instagram: socialInsta.trim(),
+          linkedin: socialLinkedin.trim(),
+          youtube: socialYoutube.trim(),
+          twitter: socialTwitter.trim(),
+        },
       });
 
       const coachingId = upserted.id;
@@ -136,6 +163,15 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
           contact_number: contactNumber.trim(),
           logo_url: logoUrl,
           banner_url: bannerUrl,
+          calendly_url: calendlyUrl.trim() || null,
+          youtube_url: youtubeUrl.trim() || null,
+          theme: theme || null,
+          social_links: {
+            instagram: socialInsta.trim(),
+            linkedin: socialLinkedin.trim(),
+            youtube: socialYoutube.trim(),
+            twitter: socialTwitter.trim(),
+          },
         });
       }
 
@@ -313,6 +349,75 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
                 className="hidden"
               />
               <p className="text-xs text-muted-foreground/60">Recommended: 1200×400px · max 5MB</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Premium Features */}
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-5 shadow-card">
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Engagement & Links</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">Calendly Booking Link</Label>
+              <Input
+                value={calendlyUrl}
+                onChange={(e) => setCalendlyUrl(e.target.value)}
+                placeholder="https://calendly.com/your-name"
+                type="url"
+                className="h-11 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">Intro Video (YouTube Link)</Label>
+              <Input
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                placeholder="https://youtube.com/watch?v=..."
+                type="url"
+                className="h-11 rounded-xl"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-3 border-t border-border pt-4 mt-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">Instagram URL</Label>
+              <Input
+                value={socialInsta}
+                onChange={(e) => setSocialInsta(e.target.value)}
+                placeholder="https://instagram.com/..."
+                type="url"
+                className="h-11 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">LinkedIn URL</Label>
+              <Input
+                value={socialLinkedin}
+                onChange={(e) => setSocialLinkedin(e.target.value)}
+                placeholder="https://linkedin.com/..."
+                type="url"
+                className="h-11 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">Twitter / X URL</Label>
+              <Input
+                value={socialTwitter}
+                onChange={(e) => setSocialTwitter(e.target.value)}
+                placeholder="https://twitter.com/..."
+                type="url"
+                className="h-11 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">YouTube Channel URL</Label>
+              <Input
+                value={socialYoutube}
+                onChange={(e) => setSocialYoutube(e.target.value)}
+                placeholder="https://youtube.com/c/..."
+                type="url"
+                className="h-11 rounded-xl"
+              />
             </div>
           </div>
         </div>

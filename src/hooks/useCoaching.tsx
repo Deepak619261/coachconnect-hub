@@ -82,6 +82,10 @@ export function useUpsertCoaching() {
       address?: string;
       google_map_link?: string;
       contact_number?: string;
+      calendly_url?: string;
+      youtube_url?: string;
+      theme?: string;
+      social_links?: any;
     }) => {
       if (data.id) {
         const { id, owner_id, ...updateData } = data;
@@ -161,6 +165,103 @@ export function useDeleteNotice() {
     },
     onSuccess: (coachingId) => {
       queryClient.invalidateQueries({ queryKey: ["notices", coachingId] });
+    },
+  });
+}
+
+// Analytics
+export function useIncrementPageViews() {
+  return useMutation({
+    mutationFn: async (coachingId: string) => {
+      const { error } = await supabase.rpc('increment_page_view', { coaching_id_param: coachingId });
+      if (error) throw error;
+      return true;
+    },
+  });
+}
+
+// Inquiries
+export function useInquiries(coachingId: string | undefined) {
+  return useQuery({
+    queryKey: ["inquiries", coachingId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("inquiries")
+        .select("*")
+        .eq("coaching_id", coachingId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!coachingId,
+  });
+}
+
+export function useCreateInquiry() {
+  return useMutation({
+    mutationFn: async (data: { coaching_id: string; name: string; email: string; phone?: string; message: string }) => {
+      const { data: result, error } = await supabase.from("inquiries").insert(data).select().single();
+      if (error) throw error;
+      return result;
+    },
+  });
+}
+
+export function useDeleteInquiry() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, coachingId }: { id: string; coachingId: string }) => {
+      const { error } = await supabase.from("inquiries").delete().eq("id", id);
+      if (error) throw error;
+      return coachingId;
+    },
+    onSuccess: (coachingId) => {
+      queryClient.invalidateQueries({ queryKey: ["inquiries", coachingId] });
+    },
+  });
+}
+
+// Testimonials
+export function useTestimonials(coachingId: string | undefined) {
+  return useQuery({
+    queryKey: ["testimonials", coachingId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("testimonials")
+        .select("*")
+        .eq("coaching_id", coachingId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!coachingId,
+  });
+}
+
+export function useCreateTestimonial() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { coaching_id: string; student_name: string; content: string; rating?: number; is_featured?: boolean }) => {
+      const { data: result, error } = await supabase.from("testimonials").insert(data).select().single();
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["testimonials", vars.coaching_id] });
+    },
+  });
+}
+
+export function useDeleteTestimonial() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, coachingId }: { id: string; coachingId: string }) => {
+      const { error } = await supabase.from("testimonials").delete().eq("id", id);
+      if (error) throw error;
+      return coachingId;
+    },
+    onSuccess: (coachingId) => {
+      queryClient.invalidateQueries({ queryKey: ["testimonials", coachingId] });
     },
   });
 }

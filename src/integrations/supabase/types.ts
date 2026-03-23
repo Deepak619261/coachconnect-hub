@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           address: string | null
           banner_url: string | null
+          calendly_url: string | null
           contact_number: string | null
           created_at: string
           description: string | null
@@ -26,12 +27,17 @@ export type Database = {
           logo_url: string | null
           name: string
           owner_id: string
+          page_views: number | null
           slug: string
+          social_links: Json | null
+          theme: string | null
           updated_at: string
+          youtube_url: string | null
         }
         Insert: {
           address?: string | null
           banner_url?: string | null
+          calendly_url?: string | null
           contact_number?: string | null
           created_at?: string
           description?: string | null
@@ -40,12 +46,17 @@ export type Database = {
           logo_url?: string | null
           name: string
           owner_id: string
+          page_views?: number | null
           slug: string
+          social_links?: Json | null
+          theme?: string | null
           updated_at?: string
+          youtube_url?: string | null
         }
         Update: {
           address?: string | null
           banner_url?: string | null
+          calendly_url?: string | null
           contact_number?: string | null
           created_at?: string
           description?: string | null
@@ -54,10 +65,55 @@ export type Database = {
           logo_url?: string | null
           name?: string
           owner_id?: string
+          page_views?: number | null
           slug?: string
+          social_links?: Json | null
+          theme?: string | null
           updated_at?: string
+          youtube_url?: string | null
         }
         Relationships: []
+      }
+      inquiries: {
+        Row: {
+          coaching_id: string
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          status: string | null
+        }
+        Insert: {
+          coaching_id: string
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          status?: string | null
+        }
+        Update: {
+          coaching_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiries_coaching_id_fkey"
+            columns: ["coaching_id"]
+            isOneToOne: false
+            referencedRelation: "coaching"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notes: {
         Row: {
@@ -147,12 +203,55 @@ export type Database = {
         }
         Relationships: []
       }
+      testimonials: {
+        Row: {
+          coaching_id: string
+          content: string
+          created_at: string
+          id: string
+          is_featured: boolean | null
+          rating: number | null
+          student_name: string
+        }
+        Insert: {
+          coaching_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_featured?: boolean | null
+          rating?: number | null
+          student_name: string
+        }
+        Update: {
+          coaching_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_featured?: boolean | null
+          rating?: number | null
+          student_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "testimonials_coaching_id_fkey"
+            columns: ["coaching_id"]
+            isOneToOne: false
+            referencedRelation: "coaching"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_page_view: {
+        Args: {
+          coaching_id_param: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

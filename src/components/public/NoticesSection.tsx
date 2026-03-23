@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 import { Bell } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -21,7 +23,7 @@ export function NoticesSection({ notices }: NoticesSectionProps) {
 
   return (
     <motion.section
-      variants={fadeUp}
+      variants={fadeUp as any}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true }}
@@ -38,20 +40,24 @@ export function NoticesSection({ notices }: NoticesSectionProps) {
         {notices.map((notice, i) => (
           <motion.div
             key={notice.id}
-            variants={fadeUp}
+            variants={fadeUp as any}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             custom={i}
             className="bg-card border border-border rounded-2xl p-6 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 group"
           >
-            <h3 className="font-display text-lg text-foreground mb-2 group-hover:text-accent transition-colors duration-200">
+            <h3 className="font-display text-lg text-foreground mb-4 group-hover:text-accent transition-colors duration-200">
               {notice.title}
             </h3>
             {notice.content && (
-              <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3 mb-4">{notice.content}</p>
+              <div className="prose prose-sm dark:prose-invert max-w-none mb-4 text-muted-foreground line-clamp-4 hover:line-clamp-none transition-all">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {notice.content}
+                </ReactMarkdown>
+              </div>
             )}
-            <p className="text-xs text-muted-foreground/70 font-medium tracking-wide uppercase">
+            <p className="text-xs text-muted-foreground/70 font-medium tracking-wide uppercase mt-auto pt-4 border-t border-border/50">
               {new Date(notice.created_at).toLocaleDateString("en-IN", {
                 year: "numeric",
                 month: "long",
