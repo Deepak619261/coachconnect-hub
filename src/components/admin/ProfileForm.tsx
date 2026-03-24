@@ -6,8 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { uploadFile, generateSlug } from "@/lib/supabase-helpers";
 import { useUpsertCoaching } from "@/hooks/useCoaching";
-import { Save, Image, ImagePlus } from "lucide-react";
+import { Save, Image, ImagePlus, Sparkles, Wand2, Key, Settings2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { generateText, AI_MODELS, type AIProvider } from "@/lib/ai-service";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ProfileFormProps {
   coaching: Tables<"coaching"> | null;
@@ -44,6 +46,18 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
   const [socialYoutube, setSocialYoutube] = useState("");
   const [socialTwitter, setSocialTwitter] = useState("");
 
+  const [aiProvider, setAiProvider] = useState<AIProvider>("openai");
+  const [aiModel, setAiModel] = useState("gpt-4o-mini");
+  const [aiApiKey, setAiApiKey] = useState("");
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [isSeoGenerating, setIsSeoGenerating] = useState(false);
+  const [isInquiryGenerating, setIsInquiryGenerating] = useState(false);
+
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [metaKeywords, setMetaKeywords] = useState("");
+  const [inquiryQuestions, setInquiryQuestions] = useState<string[]>([]);
+
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -64,6 +78,19 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
       setSocialLinkedin(socials.linkedin || "");
       setSocialYoutube(socials.youtube || "");
       setSocialTwitter(socials.twitter || "");
+
+      const ai = typeof coaching.ai_settings === 'object' && coaching.ai_settings !== null ? coaching.ai_settings as Record<string, string> : {};
+      setAiProvider((ai.provider as AIProvider) || "openai");
+      setAiModel(ai.model || "gpt-4o-mini");
+      setAiApiKey(ai.apiKey || "");
+
+      const seo = typeof coaching.seo_settings === 'object' && coaching.seo_settings !== null ? coaching.seo_settings as Record<string, string> : {};
+      setMetaTitle(seo.metaTitle || "");
+      setMetaDescription(seo.metaDescription || "");
+      setMetaKeywords(seo.keywords || "");
+
+      const inq = typeof coaching.inquiry_config === 'object' && coaching.inquiry_config !== null ? coaching.inquiry_config as Record<string, any> : {};
+      setInquiryQuestions(inq.questions || ["Tell us about your background", "Which class/grade are you in?"]);
     }
   }, [coaching]);
 
@@ -128,6 +155,19 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
           youtube: socialYoutube.trim(),
           twitter: socialTwitter.trim(),
         },
+        ai_settings: {
+          provider: aiProvider,
+          model: aiModel,
+          apiKey: aiApiKey.trim(),
+        },
+        seo_settings: {
+          metaTitle: metaTitle.trim(),
+          metaDescription: metaDescription.trim(),
+          keywords: metaKeywords.trim(),
+        },
+        inquiry_config: {
+          questions: inquiryQuestions,
+        },
       });
 
       const coachingId = upserted.id;
@@ -171,6 +211,19 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
             linkedin: socialLinkedin.trim(),
             youtube: socialYoutube.trim(),
             twitter: socialTwitter.trim(),
+          },
+          ai_settings: {
+            provider: aiProvider,
+            model: aiModel,
+            apiKey: aiApiKey.trim(),
+          },
+          seo_settings: {
+            metaTitle: metaTitle.trim(),
+            metaDescription: metaDescription.trim(),
+            keywords: metaKeywords.trim(),
+          },
+          inquiry_config: {
+            questions: inquiryQuestions,
           },
         });
       }
@@ -225,8 +278,43 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground">Description / Tagline</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-xs font-medium text-muted-foreground">Description / Tagline</Label>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 text-xs gap-1.5 text-accent hover:text-accent hover:bg-accent/10"
+                onClick={async () => {
+                  if (!aiApiKey) {
+                    toast.error("Please add an API Key in the AI Settings section below.");
+                    return;
+                  }
+                  if (!coachingName) {
+                    toast.error("Give your coaching a name first so the AI has context.");
+                    return;
+                  }
+                  
+                  setIsAiGenerating(true);
+                  try {
+                    const result = await generateText({
+                      settings: { provider: aiProvider, model: aiModel, apiKey: aiApiKey },
+                      systemPrompt: "You are a professional marketing copywriter for educational institutes and coaching centers. Keep tags short and punchy.",
+                      prompt: `Generate a high-converting tagline or short description for a coaching center named "${coachingName}". ${description ? `Context: ${description}` : ""}. Output ONLY the tagline, no quotes or additional text. Max 150 characters.`
+                    });
+                    setDescription(result.replace(/^"|"$/g, ''));
+                    toast.success("AI generated a tagline!");
+                  } catch (err: any) {
+                    toast.error(err.message || "AI Generation failed.");
+                  } finally {
+                    setIsAiGenerating(false);
+                  }
+                }}
+                disabled={isAiGenerating}
+              >
+                {isAiGenerating ? "Generating..." : <><Sparkles className="w-3.5 h-3.5" /> AI Magic</>}
+              </Button>
+            </div>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -234,7 +322,6 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
               placeholder="A short tagline about your coaching..."
               className="rounded-xl"
             />
-          </div>
           <div className="space-y-2">
             <Label className="text-xs font-medium text-muted-foreground">Address</Label>
             <Input
@@ -422,7 +509,183 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
           </div>
         </div>
 
-        <Button type="submit" disabled={upsertCoaching.isPending} className="rounded-xl px-6 h-11">
+        {/* SEO & Inquiry Config */}
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-6 shadow-card">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
+              <Settings2 className="w-4 h-4 text-accent" /> SEO & Inquiry Config
+            </h3>
+            <div className="flex gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                className="h-8 text-xs gap-1.5 border-accent/20 text-accent hover:bg-accent/5"
+                disabled={isSeoGenerating || !aiApiKey}
+                onClick={async () => {
+                  if (!coachingName) return toast.error("Provide a coaching name first.");
+                  setIsSeoGenerating(true);
+                  try {
+                    const result = await generateText({
+                      settings: { provider: aiProvider, model: aiModel, apiKey: aiApiKey },
+                      systemPrompt: "You are an SEO expert. Output ONLY valid JSON in format: {\"title\": \"...\", \"description\": \"...\", \"keywords\": \"...\"}",
+                      prompt: `Generate SEO meta tags for "${coachingName}": ${description}. Focus on education niche.`
+                    });
+                    const data = JSON.parse(result.replace(/```json|```/g, '').trim());
+                    setMetaTitle(data.title);
+                    setMetaDescription(data.description);
+                    setMetaKeywords(data.keywords);
+                    toast.success("SEO Meta tags generated!");
+                  } catch (err: any) {
+                    toast.error("Failed to generate SEO: " + err.message);
+                  } finally {
+                    setIsSeoGenerating(false);
+                  }
+                }}
+              >
+                {isSeoGenerating ? "Working..." : <><Sparkles className="w-3.5 h-3.5" /> AI SEO</>}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                className="h-8 text-xs gap-1.5 border-accent/20 text-accent hover:bg-accent/5"
+                disabled={isInquiryGenerating || !aiApiKey}
+                onClick={async () => {
+                  if (!coachingName) return toast.error("Provide a coaching name first.");
+                  setIsInquiryGenerating(true);
+                  try {
+                    const result = await generateText({
+                      settings: { provider: aiProvider, model: aiModel, apiKey: aiApiKey },
+                      systemPrompt: "Output ONLY a JSON array of 3-5 short, professional inquiry form questions.",
+                      prompt: `Generate 4 student inquiry questions for "${coachingName}". e.g. "What is your main goal?". Output as JSON array.`
+                    });
+                    const data = JSON.parse(result.replace(/```json|```/g, '').trim());
+                    setInquiryQuestions(data);
+                    toast.success("Form questions generated!");
+                  } catch (err: any) {
+                    toast.error("Failed to generate questions: " + err.message);
+                  } finally {
+                    setIsInquiryGenerating(false);
+                  }
+                }}
+              >
+                {isInquiryGenerating ? "Working..." : <><Wand2 className="w-3.5 h-3.5" /> AI Questions</>}
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">SEO Title Override</Label>
+              <Input
+                value={metaTitle}
+                onChange={(e) => setMetaTitle(e.target.value)}
+                placeholder="Best Maths Coaching in City | Class Name"
+                className="h-10 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">SEO Keywords</Label>
+              <Input
+                value={metaKeywords}
+                onChange={(e) => setMetaKeywords(e.target.value)}
+                placeholder="coaching, maths, entrance exams..."
+                className="h-10 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">SEO Meta Description</Label>
+              <Textarea
+                value={metaDescription}
+                onChange={(e) => setMetaDescription(e.target.value)}
+                rows={2}
+                placeholder="A compelling summary for search results..."
+                className="rounded-xl text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">Inquiry Questions (Comma separated)</Label>
+              <Textarea
+                value={inquiryQuestions.join(", ")}
+                onChange={(e) => setInquiryQuestions(e.target.value.split(",").map(q => q.trim()).filter(q => q))}
+                rows={2}
+                placeholder="Question 1, Question 2..."
+                className="rounded-xl text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">These questions will appear on your public inquiry form.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* AI Copywriter Settings */}
+        <div className="bg-card border-2 border-accent/20 rounded-2xl p-6 space-y-5 shadow-card relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-1">
+             <div className="bg-accent/10 text-accent text-[10px] uppercase font-bold px-2 py-1 rounded-bl-xl">Experimental</div>
+          </div>
+          
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+              <Settings2 className="w-4 h-4 text-accent" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">AI Copywriter Engine</h3>
+              <p className="text-[11px] text-muted-foreground">Bring your own API key to enable AI features.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">Service Provider</Label>
+              <Select 
+                value={aiProvider} 
+                onValueChange={(val: AIProvider) => {
+                  setAiProvider(val);
+                  setAiModel(AI_MODELS[val][0].id);
+                }}
+              >
+                <SelectTrigger className="h-11 rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openai">OpenAI (ChatGPT)</SelectItem>
+                  <SelectItem value="google">Google Gemini</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">AI Model</Label>
+              <Select value={aiModel} onValueChange={setAiModel}>
+                <SelectTrigger className="h-11 rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {AI_MODELS[aiProvider].map((m) => (
+                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+              <Key className="w-3 h-3" /> API Key
+            </Label>
+            <Input
+              value={aiApiKey}
+              onChange={(e) => setAiApiKey(e.target.value)}
+              placeholder={aiProvider === "openai" ? "sk-..." : "Enter your Google API Key"}
+              type="password"
+              className="h-11 rounded-xl"
+            />
+            <p className="text-[10px] text-muted-foreground/70">
+              Keys are stored locally. Get your key from the {aiProvider === "openai" ? "OpenAI Dashboard" : "Google AI Studio"}.
+            </p>
+          </div>
+        </div>
+
+        <Button type="submit" disabled={upsertCoaching.isPending} className="rounded-xl px-6 h-11 w-full sm:w-auto">
           <Save className="w-4 h-4 mr-2" />
           {upsertCoaching.isPending ? "Saving..." : "Save Profile"}
         </Button>

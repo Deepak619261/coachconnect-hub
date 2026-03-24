@@ -21,10 +21,25 @@ export default function PublicCoachingPage() {
   const { mutate: incrementViews } = useIncrementPageViews();
 
   useEffect(() => {
-    if (coaching?.id) {
+    if (coaching) {
       incrementViews(coaching.id);
+      const seo = (coaching as any).seo_settings;
+      if (seo) {
+        if (seo.metaTitle) document.title = seo.metaTitle;
+        if (seo.metaDescription) {
+          let meta = document.querySelector('meta[name="description"]');
+          if (!meta) {
+            meta = document.createElement('meta');
+            meta.setAttribute('name', 'description');
+            document.head.appendChild(meta);
+          }
+          meta.setAttribute('content', seo.metaDescription);
+        }
+      } else {
+        document.title = `${coaching.name} | CoachHub`;
+      }
     }
-  }, [coaching?.id, incrementViews]);
+  }, [coaching, incrementViews]);
 
   if (isLoading) return <PublicPageSkeleton />;
 
@@ -60,7 +75,7 @@ export default function PublicCoachingPage() {
         <NoticesSection notices={notices} />
         <NotesSection notes={notes} />
         <TestimonialsSection testimonials={testimonials} />
-        <InquirySection coachingId={coaching.id} />
+        <InquirySection coachingId={coaching.id} inquiryConfig={(coaching as any).inquiry_config} />
 
         <footer className="text-center pt-10 border-t border-border">
           <p className="text-sm text-muted-foreground/60">

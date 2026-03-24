@@ -33,6 +33,9 @@ export type Database = {
           theme: string | null
           updated_at: string
           youtube_url: string | null
+          ai_settings: Json | null
+          seo_settings: Json | null
+          inquiry_config: Json | null
         }
         Insert: {
           address?: string | null

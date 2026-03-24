@@ -86,6 +86,9 @@ export function useUpsertCoaching() {
       youtube_url?: string;
       theme?: string;
       social_links?: any;
+      ai_settings?: any;
+      seo_settings?: any;
+      inquiry_config?: any;
     }) => {
       if (data.id) {
         const { id, owner_id, ...updateData } = data;

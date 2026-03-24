@@ -10,7 +10,8 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } },
 };
 
-export function InquirySection({ coachingId }: { coachingId: string }) {
+export function InquirySection({ coachingId, inquiryConfig }: { coachingId: string, inquiryConfig?: any }) {
+  const questions = typeof inquiryConfig === 'object' && inquiryConfig?.questions ? inquiryConfig.questions as string[] : [];
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -83,8 +84,22 @@ export function InquirySection({ coachingId }: { coachingId: string }) {
               placeholder="+1 234 567 8900"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-4">
             <label className="text-sm font-medium text-foreground">Message</label>
+            {questions.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {questions.map((q: string, i: number) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setMessage(prev => prev ? `${prev}\n${q}` : q)}
+                    className="text-[10px] bg-accent/5 hover:bg-accent/10 text-accent border border-accent/20 px-2 py-1 rounded-full transition-colors"
+                  >
+                    + {q}
+                  </button>
+                ))}
+              </div>
+            )}
             <textarea
               required
               value={message}
