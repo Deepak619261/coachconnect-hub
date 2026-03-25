@@ -47,10 +47,8 @@ export default function ResetPassword() {
 
       if (error) throw error;
 
-      toast.success("Password updated successfully! Please sign in with your new password.");
-
-      await supabase.auth.signOut();
-      navigate("/auth", { replace: true });
+      toast.success("Password updated successfully! Welcome to your dashboard.");
+      navigate("/admin", { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Failed to update password.");
     } finally {
