@@ -6,9 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { uploadFile, generateSlug } from "@/lib/supabase-helpers";
 import { useUpsertCoaching } from "@/hooks/useCoaching";
-import { Save, Image, ImagePlus, Sparkles, Wand2, Key, Settings2 } from "lucide-react";
+import { Save, Image, ImagePlus, Sparkles, Key, Settings2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
-import { generateText, AI_MODELS, type AIProvider } from "@/lib/ai-service";
+import { generateText, AI_MODELS, fetchModels, type AIProvider } from "@/lib/ai-service";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ProfileFormProps {
@@ -50,13 +50,8 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
   const [aiModel, setAiModel] = useState("gpt-4o-mini");
   const [aiApiKey, setAiApiKey] = useState("");
   const [isAiGenerating, setIsAiGenerating] = useState(false);
-  const [isSeoGenerating, setIsSeoGenerating] = useState(false);
-  const [isInquiryGenerating, setIsInquiryGenerating] = useState(false);
-
-  const [metaTitle, setMetaTitle] = useState("");
-  const [metaDescription, setMetaDescription] = useState("");
-  const [metaKeywords, setMetaKeywords] = useState("");
-  const [inquiryQuestions, setInquiryQuestions] = useState<string[]>([]);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
+  const [dynamicModels, setDynamicModels] = useState<{ id: string, name: string }[]>([]);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -83,16 +78,17 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
       setAiProvider((ai.provider as AIProvider) || "openai");
       setAiModel(ai.model || "gpt-4o-mini");
       setAiApiKey(ai.apiKey || "");
-
-      const seo = typeof coaching.seo_settings === 'object' && coaching.seo_settings !== null ? coaching.seo_settings as Record<string, string> : {};
-      setMetaTitle(seo.metaTitle || "");
-      setMetaDescription(seo.metaDescription || "");
-      setMetaKeywords(seo.keywords || "");
-
-      const inq = typeof coaching.inquiry_config === 'object' && coaching.inquiry_config !== null ? coaching.inquiry_config as Record<string, any> : {};
-      setInquiryQuestions(inq.questions || ["Tell us about your background", "Which class/grade are you in?"]);
     }
   }, [coaching]);
+
+  useEffect(() => {
+    // Initial fetch when coaching settings are loaded
+    if (coaching && aiApiKey) {
+      handleFetchModels(aiApiKey, aiProvider);
+    }
+  }, [!!coaching]);
+
+
 
   const handleFileChange =
     (
@@ -117,6 +113,26 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
         previewSetter(null);
       }
     };
+
+  const handleFetchModels = async (key: string, provider: AIProvider) => {
+    if (!key.trim()) return;
+    setIsFetchingModels(true);
+    try {
+      const models = await fetchModels(provider, key);
+      setDynamicModels(models);
+      // If current model isn't in fetched list, pick the first one
+      if (models.length > 0 && !models.find(m => m.id === aiModel)) {
+        setAiModel(models[0].id);
+      }
+      toast.success(`Successfully fetched ${models.length} models!`);
+    } catch (err: any) {
+      console.error(err);
+      // Don't show toast error on every keystroke, maybe just log it
+      // toast.error("Could not fetch models with this key.");
+    } finally {
+      setIsFetchingModels(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,14 +175,6 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
           provider: aiProvider,
           model: aiModel,
           apiKey: aiApiKey.trim(),
-        },
-        seo_settings: {
-          metaTitle: metaTitle.trim(),
-          metaDescription: metaDescription.trim(),
-          keywords: metaKeywords.trim(),
-        },
-        inquiry_config: {
-          questions: inquiryQuestions,
         },
       });
 
@@ -216,14 +224,6 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
             provider: aiProvider,
             model: aiModel,
             apiKey: aiApiKey.trim(),
-          },
-          seo_settings: {
-            metaTitle: metaTitle.trim(),
-            metaDescription: metaDescription.trim(),
-            keywords: metaKeywords.trim(),
-          },
-          inquiry_config: {
-            questions: inquiryQuestions,
           },
         });
       }
@@ -509,115 +509,6 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
           </div>
         </div>
 
-        {/* SEO & Inquiry Config */}
-        <div className="bg-card border border-border rounded-2xl p-6 space-y-6 shadow-card">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
-              <Settings2 className="w-4 h-4 text-accent" /> SEO & Inquiry Config
-            </h3>
-            <div className="flex gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm" 
-                className="h-8 text-xs gap-1.5 border-accent/20 text-accent hover:bg-accent/5"
-                disabled={isSeoGenerating || !aiApiKey}
-                onClick={async () => {
-                  if (!coachingName) return toast.error("Provide a coaching name first.");
-                  setIsSeoGenerating(true);
-                  try {
-                    const result = await generateText({
-                      settings: { provider: aiProvider, model: aiModel, apiKey: aiApiKey },
-                      systemPrompt: "You are an SEO expert. Output ONLY valid JSON in format: {\"title\": \"...\", \"description\": \"...\", \"keywords\": \"...\"}",
-                      prompt: `Generate SEO meta tags for "${coachingName}": ${description}. Focus on education niche.`
-                    });
-                    const data = JSON.parse(result.replace(/```json|```/g, '').trim());
-                    setMetaTitle(data.title);
-                    setMetaDescription(data.description);
-                    setMetaKeywords(data.keywords);
-                    toast.success("SEO Meta tags generated!");
-                  } catch (err: any) {
-                    toast.error("Failed to generate SEO: " + err.message);
-                  } finally {
-                    setIsSeoGenerating(false);
-                  }
-                }}
-              >
-                {isSeoGenerating ? "Working..." : <><Sparkles className="w-3.5 h-3.5" /> AI SEO</>}
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm" 
-                className="h-8 text-xs gap-1.5 border-accent/20 text-accent hover:bg-accent/5"
-                disabled={isInquiryGenerating || !aiApiKey}
-                onClick={async () => {
-                  if (!coachingName) return toast.error("Provide a coaching name first.");
-                  setIsInquiryGenerating(true);
-                  try {
-                    const result = await generateText({
-                      settings: { provider: aiProvider, model: aiModel, apiKey: aiApiKey },
-                      systemPrompt: "Output ONLY a JSON array of 3-5 short, professional inquiry form questions.",
-                      prompt: `Generate 4 student inquiry questions for "${coachingName}". e.g. "What is your main goal?". Output as JSON array.`
-                    });
-                    const data = JSON.parse(result.replace(/```json|```/g, '').trim());
-                    setInquiryQuestions(data);
-                    toast.success("Form questions generated!");
-                  } catch (err: any) {
-                    toast.error("Failed to generate questions: " + err.message);
-                  } finally {
-                    setIsInquiryGenerating(false);
-                  }
-                }}
-              >
-                {isInquiryGenerating ? "Working..." : <><Wand2 className="w-3.5 h-3.5" /> AI Questions</>}
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">SEO Title Override</Label>
-              <Input
-                value={metaTitle}
-                onChange={(e) => setMetaTitle(e.target.value)}
-                placeholder="Best Maths Coaching in City | Class Name"
-                className="h-10 rounded-xl"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">SEO Keywords</Label>
-              <Input
-                value={metaKeywords}
-                onChange={(e) => setMetaKeywords(e.target.value)}
-                placeholder="coaching, maths, entrance exams..."
-                className="h-10 rounded-xl"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">SEO Meta Description</Label>
-              <Textarea
-                value={metaDescription}
-                onChange={(e) => setMetaDescription(e.target.value)}
-                rows={2}
-                placeholder="A compelling summary for search results..."
-                className="rounded-xl text-sm"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">Inquiry Questions (Comma separated)</Label>
-              <Textarea
-                value={inquiryQuestions.join(", ")}
-                onChange={(e) => setInquiryQuestions(e.target.value.split(",").map(q => q.trim()).filter(q => q))}
-                rows={2}
-                placeholder="Question 1, Question 2..."
-                className="rounded-xl text-sm"
-              />
-              <p className="text-[10px] text-muted-foreground">These questions will appear on your public inquiry form.</p>
-            </div>
-          </div>
-        </div>
-
         {/* AI Copywriter Settings */}
         <div className="bg-card border-2 border-accent/20 rounded-2xl p-6 space-y-5 shadow-card relative overflow-hidden">
           <div className="absolute top-0 right-0 p-1">
@@ -642,6 +533,7 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
                 onValueChange={(val: AIProvider) => {
                   setAiProvider(val);
                   setAiModel(AI_MODELS[val][0].id);
+                  setDynamicModels([]);
                 }}
               >
                 <SelectTrigger className="h-11 rounded-xl">
@@ -657,10 +549,10 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
               <Label className="text-xs font-medium text-muted-foreground">AI Model</Label>
               <Select value={aiModel} onValueChange={setAiModel}>
                 <SelectTrigger className="h-11 rounded-xl">
-                  <SelectValue />
+                  <SelectValue placeholder={isFetchingModels ? "Fetching..." : "Select Model"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {AI_MODELS[aiProvider].map((m) => (
+                  {(dynamicModels.length > 0 ? dynamicModels : AI_MODELS[aiProvider]).map((m) => (
                     <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -669,12 +561,31 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-              <Key className="w-3 h-3" /> API Key
+            <Label className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+              <span className="flex items-center gap-1.5"><Key className="w-3 h-3" /> API Key</span>
+              {aiApiKey && (
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 text-[10px] px-2 text-accent"
+                  onClick={() => handleFetchModels(aiApiKey, aiProvider)}
+                  disabled={isFetchingModels}
+                >
+                  {isFetchingModels ? "Loading..." : "Refresh Models"}
+                </Button>
+              )}
             </Label>
             <Input
               value={aiApiKey}
-              onChange={(e) => setAiApiKey(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setAiApiKey(val);
+                // Simple debounce-like logic or just on blur might be better, 
+                // but let's try a small timeout or just the "Refresh" button.
+                // For now, let's keep the user-triggered button for clarity and use a useEffect for initial load.
+              }}
+              onBlur={() => handleFetchModels(aiApiKey, aiProvider)}
               placeholder={aiProvider === "openai" ? "sk-..." : "Enter your Google API Key"}
               type="password"
               className="h-11 rounded-xl"

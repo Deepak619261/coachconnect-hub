@@ -74,6 +74,57 @@ export async function generateText({ settings, prompt, systemPrompt }: AIGenerat
   throw new Error("Unsupported AI Provider selected.");
 }
 
+
+export async function fetchModels(provider: AIProvider, apiKey: string): Promise<{ id: string, name: string }[]> {
+  const cleanApiKey = apiKey.trim();
+  if (!cleanApiKey) throw new Error("API Key is missing.");
+
+  if (provider === "openai") {
+    const response = await fetch("https://api.openai.com/v1/models", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${cleanApiKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to fetch OpenAI models.");
+    }
+
+    const data = await response.json();
+    // Filter for common chat models to keep it clean, or just return all gpt models
+    return data.data
+      .filter((m: any) => m.id.startsWith("gpt-"))
+      .map((m: any) => ({
+        id: m.id,
+        name: m.id.toUpperCase(),
+      }))
+      .sort((a: any, b: any) => a.id.localeCompare(b.id));
+  }
+
+  if (provider === "google") {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${cleanApiKey}`, {
+      method: "GET",
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to fetch Google models.");
+    }
+
+    const data = await response.json();
+    return data.models
+      .filter((m: any) => m.supportedGenerationMethods.includes("generateContent"))
+      .map((m: any) => ({
+        id: m.name.split("/").pop(), // "models/gemini-1.5-pro" -> "gemini-1.5-pro"
+        name: m.displayName || m.name.split("/").pop(),
+      }));
+  }
+
+  throw new Error("Unsupported AI Provider.");
+}
+
 export const AI_MODELS = {
   openai: [
     { id: "gpt-4o", name: "GPT-4o (Most Capable)" },
@@ -85,3 +136,4 @@ export const AI_MODELS = {
     { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash (Fast & Efficient)" },
   ],
 };
+
