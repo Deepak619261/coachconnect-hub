@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 import { GraduationCap, Eye, EyeOff } from "lucide-react";
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [authMode, setAuthMode] = useState<"login" | "signup" | "forgotPassword">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -29,11 +29,11 @@ export default function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isLogin && name.trim().length < 2) {
+    if (authMode === "signup" && name.trim().length < 2) {
       toast.error("Please enter your full name.");
       return;
     }
-    if (password.length < 6) {
+    if (authMode !== "forgotPassword" && password.length < 6) {
       toast.error("Password must be at least 6 characters.");
       return;
     }
@@ -41,12 +41,12 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      if (isLogin) {
+      if (authMode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
         navigate("/admin");
-      } else {
+      } else if (authMode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -54,7 +54,14 @@ export default function AuthPage() {
         });
         if (error) throw error;
         toast.success("Account created! Check your email to confirm, then sign in.");
-        setIsLogin(true); // Switch to login view
+        setAuthMode("login"); 
+      } else if (authMode === "forgotPassword") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        toast.success("Password reset link sent! Please check your email inbox.");
+        setAuthMode("login");
       }
     } catch (err: any) {
       // Provide friendlier messages for common Supabase auth errors
@@ -63,7 +70,7 @@ export default function AuthPage() {
         toast.error("Invalid email or password.");
       } else if (msg.includes("User already registered")) {
         toast.error("An account with this email already exists. Please sign in.");
-        setIsLogin(true);
+        setAuthMode("login");
       } else {
         toast.error(msg);
       }
@@ -88,13 +95,17 @@ export default function AuthPage() {
           </div>
           <h1 className="text-3xl font-display text-foreground">CoachHub Lite</h1>
           <p className="text-muted-foreground mt-2 font-body">
-            {isLogin ? "Sign in to manage your coaching" : "Create your coaching account"}
+            {authMode === "login" 
+              ? "Sign in to manage your coaching" 
+              : authMode === "signup"
+                ? "Create your coaching account"
+                : "Reset your coaching account password"}
           </p>
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-8 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {!isLogin && (
+            {authMode === "signup" && (
               <div className="space-y-2">
                 <Label htmlFor="name" className="font-body text-sm font-medium text-foreground">
                   Full Name
@@ -104,7 +115,7 @@ export default function AuthPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
-                  required={!isLogin}
+                  required={authMode === "signup"}
                   autoComplete="name"
                   className="h-11"
                 />
@@ -125,52 +136,71 @@ export default function AuthPage() {
                 className="h-11"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="font-body text-sm font-medium text-foreground">
-                Password
-              </Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  minLength={6}
-                  autoComplete={isLogin ? "current-password" : "new-password"}
-                  className="h-11 pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  tabIndex={-1}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+            {authMode !== "forgotPassword" && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password font-body text-sm font-medium text-foreground">
+                    Password
+                  </Label>
+                  {authMode === "login" && (
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode("forgotPassword")}
+                      className="text-xs text-primary hover:underline font-body"
+                    >
+                      Forgot?
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required={authMode !== "forgotPassword"}
+                    minLength={6}
+                    autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                    className="h-11 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {authMode === "signup" && (
+                  <p className="text-xs text-muted-foreground">Minimum 6 characters.</p>
+                )}
               </div>
-              {!isLogin && (
-                <p className="text-xs text-muted-foreground">Minimum 6 characters.</p>
-              )}
-            </div>
+            )}
             <Button type="submit" className="w-full h-11 font-body" disabled={loading}>
-              {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
+              {loading 
+                ? "Please wait..." 
+                : authMode === "login" 
+                  ? "Sign In" 
+                  : authMode === "signup"
+                    ? "Create Account"
+                    : "Send Reset Link"}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
             <button
               onClick={() => {
-                setIsLogin(!isLogin);
+                setAuthMode(authMode === "login" ? "signup" : "login");
                 setEmail("");
                 setPassword("");
                 setName("");
               }}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body"
             >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+              {authMode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
           </div>
         </div>
