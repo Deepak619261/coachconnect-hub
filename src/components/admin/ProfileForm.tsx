@@ -120,15 +120,8 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
     try {
       const models = await fetchModels(provider, key);
       setDynamicModels(models);
-      // If current model isn't in fetched list, pick the first one
-      if (models.length > 0 && !models.find(m => m.id === aiModel)) {
-        setAiModel(models[0].id);
-      }
-      toast.success(`Successfully fetched ${models.length} models!`);
     } catch (err: any) {
-      console.error(err);
-      // Don't show toast error on every keystroke, maybe just log it
-      // toast.error("Could not fetch models with this key.");
+      console.error("Could not fetch models:", err);
     } finally {
       setIsFetchingModels(false);
     }
@@ -170,11 +163,6 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
           linkedin: socialLinkedin.trim(),
           youtube: socialYoutube.trim(),
           twitter: socialTwitter.trim(),
-        },
-        ai_settings: {
-          provider: aiProvider,
-          model: aiModel,
-          apiKey: aiApiKey.trim(),
         },
       });
 
@@ -219,11 +207,6 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
             linkedin: socialLinkedin.trim(),
             youtube: socialYoutube.trim(),
             twitter: socialTwitter.trim(),
-          },
-          ai_settings: {
-            provider: aiProvider,
-            model: aiModel,
-            apiKey: aiApiKey.trim(),
           },
         });
       }
@@ -509,92 +492,7 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
           </div>
         </div>
 
-        {/* AI Copywriter Settings */}
-        <div className="bg-card border-2 border-accent/20 rounded-2xl p-6 space-y-5 shadow-card relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-1">
-             <div className="bg-accent/10 text-accent text-[10px] uppercase font-bold px-2 py-1 rounded-bl-xl">Experimental</div>
-          </div>
-          
-          <div className="flex items-center gap-2.5 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-              <Settings2 className="w-4 h-4 text-accent" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">AI Copywriter Engine</h3>
-              <p className="text-[11px] text-muted-foreground">Bring your own API key to enable AI features.</p>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">Service Provider</Label>
-              <Select 
-                value={aiProvider} 
-                onValueChange={(val: AIProvider) => {
-                  setAiProvider(val);
-                  setAiModel(AI_MODELS[val][0].id);
-                  setDynamicModels([]);
-                }}
-              >
-                <SelectTrigger className="h-11 rounded-xl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="openai">OpenAI (ChatGPT)</SelectItem>
-                  <SelectItem value="google">Google Gemini</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">AI Model</Label>
-              <Select value={aiModel} onValueChange={setAiModel}>
-                <SelectTrigger className="h-11 rounded-xl">
-                  <SelectValue placeholder={isFetchingModels ? "Fetching..." : "Select Model"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(dynamicModels.length > 0 ? dynamicModels : AI_MODELS[aiProvider]).map((m) => (
-                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><Key className="w-3 h-3" /> API Key</span>
-              {aiApiKey && (
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-6 text-[10px] px-2 text-accent"
-                  onClick={() => handleFetchModels(aiApiKey, aiProvider)}
-                  disabled={isFetchingModels}
-                >
-                  {isFetchingModels ? "Loading..." : "Refresh Models"}
-                </Button>
-              )}
-            </Label>
-            <Input
-              value={aiApiKey}
-              onChange={(e) => {
-                const val = e.target.value;
-                setAiApiKey(val);
-                // Simple debounce-like logic or just on blur might be better, 
-                // but let's try a small timeout or just the "Refresh" button.
-                // For now, let's keep the user-triggered button for clarity and use a useEffect for initial load.
-              }}
-              onBlur={() => handleFetchModels(aiApiKey, aiProvider)}
-              placeholder={aiProvider === "openai" ? "sk-..." : "Enter your Google API Key"}
-              type="password"
-              className="h-11 rounded-xl"
-            />
-            <p className="text-[10px] text-muted-foreground/70">
-              Keys are stored locally. Get your key from the {aiProvider === "openai" ? "OpenAI Dashboard" : "Google AI Studio"}.
-            </p>
-          </div>
-        </div>
 
         <Button type="submit" disabled={upsertCoaching.isPending} className="rounded-xl px-6 h-11 w-full sm:w-auto">
           <Save className="w-4 h-4 mr-2" />
