@@ -6,27 +6,43 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { GraduationCap, Eye, EyeOff, Lock } from "lucide-react";
+import { GraduationCap, Eye, EyeOff, Lock, Loader2 } from "lucide-react";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if we have a session (Supabase automatically handles the hash fragment)
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    // Listen for auth state changes - Supabase will process the hash fragment
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
-        console.log("Password recovery flow active");
-      }
-      if (!session && event !== "INITIAL_SESSION") {
-        // If no session and not a recovery event, redirect to login
-        // toast.error("Invalid or expired reset link.");
-        // navigate("/auth");
+        // User arrived via password reset link — session is active
+        setIsReady(true);
+      } else if (event === "SIGNED_IN" && session) {
+        // Also handle if session is already established from the hash
+        setIsReady(true);
       }
     });
+
+    // Also check if there's already an active session (e.g., page refresh)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsReady(true);
+      } else {
+        // No session and no hash — invalid access
+        const hash = window.location.hash;
+        if (!hash || !hash.includes("access_token")) {
+          toast.error("Invalid or expired reset link. Please request a new one.");
+          navigate("/auth", { replace: true });
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,9 +67,8 @@ export default function ResetPassword() {
 
       if (error) throw error;
 
-      toast.success("Password updated successfully! You can now log in.");
+      toast.success("Password updated successfully! Please sign in with your new password.");
       
-      // Sign out to ensure they log in fresh or just redirect
       await supabase.auth.signOut();
       navigate("/auth", { replace: true });
     } catch (err: any) {
@@ -62,6 +77,15 @@ export default function ResetPassword() {
       setLoading(false);
     }
   };
+
+  // Show a loading spinner while we wait for Supabase to process the hash
+  if (!isReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -93,6 +117,7 @@ export default function ResetPassword() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  minLength={6}
                   className="pr-10"
                 />
                 <button
@@ -103,6 +128,7 @@ export default function ResetPassword() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              <p className="text-xs text-muted-foreground">Minimum 6 characters.</p>
             </div>
 
             <div className="space-y-2">

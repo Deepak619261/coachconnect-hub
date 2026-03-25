@@ -6,10 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { uploadFile, generateSlug } from "@/lib/supabase-helpers";
 import { useUpsertCoaching } from "@/hooks/useCoaching";
-import { Save, Image, ImagePlus, Sparkles, Key, Settings2 } from "lucide-react";
+import { Save, Image, ImagePlus, Sparkles } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
-import { generateText, AI_MODELS, fetchModels, type AIProvider } from "@/lib/ai-service";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { generateText, getGlobalAISettings } from "@/lib/ai-service";
 
 interface ProfileFormProps {
   coaching: Tables<"coaching"> | null;
@@ -46,12 +45,7 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
   const [socialYoutube, setSocialYoutube] = useState("");
   const [socialTwitter, setSocialTwitter] = useState("");
 
-  const [aiProvider, setAiProvider] = useState<AIProvider>("openai");
-  const [aiModel, setAiModel] = useState("gpt-4o-mini");
-  const [aiApiKey, setAiApiKey] = useState("");
   const [isAiGenerating, setIsAiGenerating] = useState(false);
-  const [isFetchingModels, setIsFetchingModels] = useState(false);
-  const [dynamicModels, setDynamicModels] = useState<{ id: string, name: string }[]>([]);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -73,21 +67,8 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
       setSocialLinkedin(socials.linkedin || "");
       setSocialYoutube(socials.youtube || "");
       setSocialTwitter(socials.twitter || "");
-
-      const ai = typeof coaching.ai_settings === 'object' && coaching.ai_settings !== null ? coaching.ai_settings as Record<string, string> : {};
-      setAiProvider((ai.provider as AIProvider) || "openai");
-      setAiModel(ai.model || "gpt-4o-mini");
-      setAiApiKey(ai.apiKey || "");
     }
   }, [coaching]);
-
-  useEffect(() => {
-    // Initial fetch when coaching settings are loaded
-    if (coaching && aiApiKey) {
-      handleFetchModels(aiApiKey, aiProvider);
-    }
-  }, [!!coaching]);
-
 
 
   const handleFileChange =
@@ -114,18 +95,7 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
       }
     };
 
-  const handleFetchModels = async (key: string, provider: AIProvider) => {
-    if (!key.trim()) return;
-    setIsFetchingModels(true);
-    try {
-      const models = await fetchModels(provider, key);
-      setDynamicModels(models);
-    } catch (err: any) {
-      console.error("Could not fetch models:", err);
-    } finally {
-      setIsFetchingModels(false);
-    }
-  };
+
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -269,10 +239,6 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
                 size="sm" 
                 className="h-7 text-xs gap-1.5 text-accent hover:text-accent hover:bg-accent/10"
                 onClick={async () => {
-                  if (!aiApiKey) {
-                    toast.error("Please add an API Key in the AI Settings section below.");
-                    return;
-                  }
                   if (!coachingName) {
                     toast.error("Give your coaching a name first so the AI has context.");
                     return;
@@ -280,8 +246,14 @@ export function ProfileForm({ coaching, userId }: ProfileFormProps) {
                   
                   setIsAiGenerating(true);
                   try {
+                    // Fetch the globally configured AI settings from the database
+                    const settings = await getGlobalAISettings();
+                    if (!settings.apiKey) {
+                      toast.error("AI is not configured yet. Please ask the admin to set the API key in the database.");
+                      return;
+                    }
                     const result = await generateText({
-                      settings: { provider: aiProvider, model: aiModel, apiKey: aiApiKey },
+                      settings,
                       systemPrompt: "You are a professional marketing copywriter for educational institutes and coaching centers. Keep tags short and punchy.",
                       prompt: `Generate a high-converting tagline or short description for a coaching center named "${coachingName}". ${description ? `Context: ${description}` : ""}. Output ONLY the tagline, no quotes or additional text. Max 150 characters.`
                     });
