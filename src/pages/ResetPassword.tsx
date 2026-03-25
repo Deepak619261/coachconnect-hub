@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,37 +14,16 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isReady, setIsReady] = useState(false);
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    // Listen for auth state changes - Supabase will process the hash fragment
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
-        // User arrived via password reset link — session is active
-        setIsReady(true);
-      } else if (event === "SIGNED_IN" && session) {
-        // Also handle if session is already established from the hash
-        setIsReady(true);
-      }
-    });
-
-    // Also check if there's already an active session (e.g., page refresh)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsReady(true);
-      } else {
-        // No session and no hash — invalid access
-        const hash = window.location.hash;
-        if (!hash || !hash.includes("access_token")) {
-          toast.error("Invalid or expired reset link. Please request a new one.");
-          navigate("/auth", { replace: true });
-        }
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    // If auth is done loading and there's no user session, the link is invalid/expired
+    if (!authLoading && !user) {
+      toast.error("Invalid or expired reset link. Please request a new one.");
+      navigate("/auth", { replace: true });
+    }
+  }, [authLoading, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +48,7 @@ export default function ResetPassword() {
       if (error) throw error;
 
       toast.success("Password updated successfully! Please sign in with your new password.");
-      
+
       await supabase.auth.signOut();
       navigate("/auth", { replace: true });
     } catch (err: any) {
@@ -78,8 +58,8 @@ export default function ResetPassword() {
     }
   };
 
-  // Show a loading spinner while we wait for Supabase to process the hash
-  if (!isReady) {
+  // Show a loading spinner while we wait for the auth session to be established
+  if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -108,22 +88,24 @@ export default function ResetPassword() {
         <div className="bg-card rounded-2xl border border-border p-8 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
+              <Label htmlFor="new-password">New Password</Label>
               <div className="relative">
                 <Input
-                  id="password"
+                  id="new-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
                   minLength={6}
-                  className="pr-10"
+                  autoComplete="new-password"
+                  className="h-11 pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -132,14 +114,16 @@ export default function ResetPassword() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Label htmlFor="confirm-password">Confirm New Password</Label>
               <Input
-                id="confirmPassword"
+                id="confirm-password"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                autoComplete="new-password"
+                className="h-11"
               />
             </div>
 

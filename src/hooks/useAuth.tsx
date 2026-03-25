@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
   session: Session | null;
@@ -22,15 +21,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Handle hash-based redirects from Supabase email links (signup confirm, password recovery)
-    const hash = window.location.hash;
-    if (hash && hash.includes("type=recovery")) {
-      // Password recovery: extract the hash and navigate to /reset-password
-      // Supabase client will automatically pick up the access_token from the hash
-      window.location.replace(`/reset-password${hash}`);
-      return; // Stop further processing
-    }
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
